@@ -218,10 +218,9 @@ function initialize(address supraRouterAddress, address dateTimeAddress) public 
 ```
 
 ## References
-- [Supra VRF Documentation](https://supraoracles.com/docs/vrf)
 - [OpenZeppelin Access Control](https://docs.openzeppelin.com/contracts/4.x/access-control)
 - [Immunefi VRF Vulnerability Database](https://immunefi.com/explore/)
-- [Similar VRF Oracle Manipulation Cases](https://github.com/immunefi-team/Web3-Security-Library/blob/main/Vulnerabilities/Oracle%20Manipulation.md)
+
 
 **Novel Finding**: This vulnerability was not covered in prior audits (OtterSec, Trail of Bits) as it focuses specifically on deployment-time oracle role assignment rather than runtime oracle behavior.
 
