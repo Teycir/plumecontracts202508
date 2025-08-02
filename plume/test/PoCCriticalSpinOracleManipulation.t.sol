@@ -33,7 +33,7 @@ import "forge-std/console.sol";
 import "../src/spin/Spin.sol";
 import "../src/spin/DateTime.sol";
 
-contract PoCCriticalSpinWrongAsset is Test {
+contract PoCCriticalSpinOracleManipulation is Test {
     Spin spin;
     address attacker = vm.addr(1);
     address treasury = vm.addr(2); // funds the prize pool
@@ -69,7 +69,7 @@ contract PoCCriticalSpinWrongAsset is Test {
     /* ---------------------------------------------------------- */
     /* Exploit                                                    */
     /* ---------------------------------------------------------- */
-    function testPoCCriticalSpinWrongAsset() public {
+    function testPoCCriticalSpinOracleManipulation() public {
         // ---------------------------------- set up ----------------------------------
         vm.warp(1704067200); // 1-Jan-2024
         vm.startPrank(attacker);
@@ -144,14 +144,14 @@ contract PoCCriticalSpinWrongAsset is Test {
 /*
  * TEST EXECUTION RESULTS:
  *
-cd plume && forge test --match-test PoCCriticalSpinWrongAsset -vvvv
+cd plume && forge test --match-test PoCCriticalSpinOracleManipulation -vvvv
 [⠢] Compiling...
 No files changed, compilation skipped
 
-Ran 1 test for test/PoCCriticalSpinWrongAsset.t.sol:PoCCriticalSpinWrongAsset
-[PASS] testPoCCriticalSpinWrongAsset() (gas: 207404)
+Ran 1 test for test/PoCCriticalSpinOracleManipulation.t.sol:PoCCriticalSpinOracleManipulation
+[PASS] testPoCCriticalSpinOracleManipulation() (gas: 207404)
 Traces:
-[264521] PoCCriticalSpinWrongAsset::testPoCCriticalSpinWrongAsset()
+[264521] PoCCriticalSpinOracleManipulation::testPoCCriticalSpinOracleManipulation()
     ├─ [0] VM::warp(1704067200 [1.704e9])
     │   └─ ← [Return]
     ├─ [0] VM::startPrank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
