@@ -2,7 +2,7 @@
 solc = "0.8.25"
 evm_version = "cancun"
 src = "src"
-test = "../PoC"
+out = "out"
 libs = ["lib"]
 ffi = true
 ast = true
@@ -11,7 +11,6 @@ extra_output = ["storageLayout"]
 optimizer = true
 optimizer_runs = 200
 via_ir = true
-ignored_error_codes = [3420, 2519, 3628, 2072, 5667, 2018]
 
 [fmt]
 single_line_statement_blocks = "multi"
@@ -23,3 +22,4 @@ int_types = "long"
 quote_style = "double"
 number_underscore = "thousands"
 wrap_comments = true
+

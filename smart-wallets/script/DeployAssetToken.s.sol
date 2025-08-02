@@ -28,7 +28,7 @@ contract DeployAssetToken is Script, Test {
         AssetTokenProxy assetTokenProxy = new AssetTokenProxy(
             address(assetToken),
             abi.encodeCall(
-                assetTokenProxy.initialize,
+                assetToken.initialize,
                 (
                     ADMIN_ADDRESS, // owner
                     "Real World Asset Token", // name
