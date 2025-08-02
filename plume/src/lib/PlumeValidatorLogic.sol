@@ -2,12 +2,10 @@
 pragma solidity ^0.8.25;
 
 import { PlumeStakingStorage } from "./PlumeStakingStorage.sol";
-// Import errors/events if needed by logic
-import "./PlumeErrors.sol";
-import "./PlumeEvents.sol";
 
 /**
  * @title PlumeValidatorLogic
+ * @author Eugene Y. Q. Shen, Alp Guneysel
  * @notice Internal library containing shared logic for validator management and checks.
  */
 library PlumeValidatorLogic {
@@ -58,31 +56,17 @@ library PlumeValidatorLogic {
      * @param validatorId The ID of the validator.
      */
     function addStakerToValidator(PlumeStakingStorage.Layout storage $, address staker, uint16 validatorId) internal {
-        // This replaces _addStakerToValidator from ValidatorFacet
         if (!$.userHasStakedWithValidator[staker][validatorId]) {
             $.userValidators[staker].push(validatorId);
             $.userHasStakedWithValidator[staker][validatorId] = true;
         }
+
         if (!$.isStakerForValidator[validatorId][staker]) {
+            // === Store index before pushing ===
+            uint256 index = $.validatorStakers[validatorId].length;
             $.validatorStakers[validatorId].push(staker);
             $.isStakerForValidator[validatorId][staker] = true;
-        }
-        // Call the library version of the helper function
-        addStakerIfNew($, staker);
-    }
-
-    /**
-     * @notice Adds a staker to the global stakers list if they have a stake and are not already listed.
-     * @param $ The PlumeStaking storage layout.
-     * @param staker The address of the staker.
-     */
-    function addStakerIfNew(PlumeStakingStorage.Layout storage $, address staker) internal {
-        // This replaces _addStakerIfNew from ValidatorFacet
-        // Check global stake info, not validator specific
-        if ($.stakeInfo[staker].staked > 0 && !$.isStaker[staker]) {
-            $.stakers.push(staker);
-            $.isStaker[staker] = true;
-            // emit PlumeEvents.StakerAdded(staker);
+            $.userIndexInValidatorStakers[staker][validatorId] = index; // <<< Store the index
         }
     }
 
@@ -98,59 +82,84 @@ library PlumeValidatorLogic {
         address staker,
         uint16 validatorId
     ) internal {
-        // Only proceed if the user has no stake left with this validator
+        // Part 1: Manage $.validatorStakers list (validator's list of its ACTIVE stakers)
+        // This runs if active stake with this validator becomes zero AND they were previously listed as an active
+        // staker for it.
         if ($.userValidatorStakes[staker][validatorId].staked == 0 && $.isStakerForValidator[validatorId][staker]) {
-            // Remove staker from validator's staker list by replacing with the last element
-            address[] storage stakers = $.validatorStakers[validatorId];
-            for (uint256 i = 0; i < stakers.length; i++) {
-                if (stakers[i] == staker) {
-                    // Replace with the last element and remove the last element
-                    stakers[i] = stakers[stakers.length - 1];
-                    stakers.pop();
-                    break;
+            address[] storage stakersList = $.validatorStakers[validatorId];
+            uint256 listLength = stakersList.length;
+            if (listLength > 0) {
+                uint256 indexToRemove = $.userIndexInValidatorStakers[staker][validatorId];
+                if (indexToRemove < listLength && stakersList[indexToRemove] == staker) {
+                    address lastStaker = stakersList[listLength - 1];
+                    if (indexToRemove != listLength - 1) {
+                        stakersList[indexToRemove] = lastStaker;
+                        $.userIndexInValidatorStakers[lastStaker][validatorId] = indexToRemove;
+                    }
+                    stakersList.pop();
                 }
             }
+            $.isStakerForValidator[validatorId][staker] = false; // Correctly marks they are no longer an ACTIVE staker
+                // for this validator
+            delete $.userIndexInValidatorStakers[staker][validatorId];
+        }
 
-            // Update the mapping to show staker is no longer staking with this validator
-            $.isStakerForValidator[validatorId][staker] = false;
+        // Part 2: Manage $.userValidators list (user's list of ANY association with a validator)
+        // This runs if active stake for this validator is zero AND their cooldown amount for this validator is zero
+        // AND they have no pending rewards for this validator.
+        bool hasActiveStakeForThisVal = $.userValidatorStakes[staker][validatorId].staked > 0;
+        bool hasActiveCooldownForThisVal = $.userValidatorCooldowns[staker][validatorId].amount > 0;
 
-            // Optionally, also remove validator from user's validator list if needed
-            // (only if we want to keep this list accurate)
+        // Use the pending rewards flag which handles both current and removed tokens
+        bool hasPendingRewardsForThisVal = $.userHasPendingRewards[staker][validatorId];
+
+
+        if (!hasActiveStakeForThisVal && !hasActiveCooldownForThisVal && !hasPendingRewardsForThisVal) {
             if ($.userHasStakedWithValidator[staker][validatorId]) {
-                uint16[] storage userValidators = $.userValidators[staker];
-                for (uint256 i = 0; i < userValidators.length; i++) {
-                    if (userValidators[i] == validatorId) {
-                        userValidators[i] = userValidators[userValidators.length - 1];
-                        userValidators.pop();
+                // Check if they are currently in the userValidators list (via this mapping)
+                uint16[] storage userValidators_ = $.userValidators[staker];
+
+                bool removed = false;
+                for (uint256 i = 0; i < userValidators_.length; i++) {
+                    if (userValidators_[i] == validatorId) {
+                        // Swap with last and pop
+                        userValidators_[i] = userValidators_[userValidators_.length - 1];
+                        userValidators_.pop();
+                        removed = true;
+
                         break;
                     }
                 }
-                $.userHasStakedWithValidator[staker][validatorId] = false;
+                // Only set userHasStakedWithValidator to false if it was actually removed or if the list is now empty
+                // for this validator
+                // This mapping essentially tracks if the validatorId should be in $.userValidators[staker]
+                if (removed) {
+                    // Or if after potential pop, the validator is no longer findable.
+                    $.userHasStakedWithValidator[staker][validatorId] = false;
+                } else { }
+            } else { }
+        }
+    }
+
+    /**
+     * @notice Removes a staker from all validators where they have no remaining involvement
+     * @dev This checks all validators the user has ever staked with and cleans up relationships
+     *      where they have no active stake, cooldown, or pending rewards
+     * @param $ The PlumeStaking storage layout.
+     * @param staker The address of the staker.
+     */
+    function removeStakerFromAllValidators(PlumeStakingStorage.Layout storage $, address staker) internal {
+        // Make a copy to avoid iteration issues when removeStakerFromValidator is called
+        uint16[] memory userAssociatedValidators = $.userValidators[staker];
+
+        for (uint256 i = 0; i < userAssociatedValidators.length; i++) {
+            uint16 validatorId = userAssociatedValidators[i];
+            if ($.userValidatorStakes[staker][validatorId].staked == 0) {
+                removeStakerFromValidator($, staker, validatorId);
             }
         }
     }
 
-    // /**
-    //  * @notice Adds a validator ID to a user's list of staked validators if not already present.
-    //  * @dev Internal function to manage the user's list of validators.
-    //  * @param $ The PlumeStaking storage layout.
-    //  * @param user The address of the staker.
-    //  * @param validatorId The ID of the validator being staked with.
-    //  */
-    // function addStakerToValidatorList(
-    //     PlumeStakingStorage.Layout storage $,
-    //     address user,
-    //     uint16 validatorId
-    // ) internal {
-    //     uint16[] storage validatorList = $.userValidatorsList[user];
-    //     // Check if the validator is already in the list
-    //     for (uint256 i = 0; i < validatorList.length; i++) {
-    //         if (validatorList[i] == validatorId) {
-    //             return; // Already exists, do nothing
-    //         }
-    //     }
-    //     // If not found, add it
-    //     validatorList.push(validatorId);
-    // }
-
 }
+
+// @audit

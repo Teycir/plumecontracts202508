@@ -4,17 +4,21 @@ pragma solidity ^0.8.25;
 import { Script, console2 } from "forge-std/Script.sol";
 
 // --- SolidState Diamond Interfaces ---
-import { IERC2535DiamondCutInternal } from "solidstate-solidity/interfaces/IERC2535DiamondCutInternal.sol";
+// REMOVE the direct import - it will be picked up via ISolidStateDiamond
+// import { IERC2535DiamondCutInternal } from "@solidstate//interfaces/IERC2535DiamondCutInternal.sol";
 
-import { IERC2535DiamondLoupe } from "solidstate-solidity/interfaces/IERC2535DiamondLoupe.sol";
-import { ISolidStateDiamond } from "solidstate-solidity/proxy/diamond/SolidStateDiamond.sol"; // For verification
+import { IERC2535DiamondLoupe } from "@solidstate/interfaces/IERC2535DiamondLoupe.sol";
+import { ISolidStateDiamond } from "@solidstate/proxy/diamond/SolidStateDiamond.sol";
+// Import the struct definition explicitly from the same path used by ISolidStateDiamond if needed
+// (Often unnecessary if ISolidStateDiamond imports it)
+import { IERC2535DiamondCutInternal } from "@solidstate/interfaces/IERC2535DiamondCutInternal.sol";
 
 contract FixAccessControlRoles is Script {
 
     // --- Configuration ---
-    address private constant DIAMOND_PROXY_ADDRESS = 0xA20bfe49969D4a0E9abfdb6a46FeD777304ba07f;
+    address private constant DIAMOND_PROXY_ADDRESS = 0xCF8B97260F77c11d58542644c5fD1D5F93FdA57d;
     // Address of the *NEW* AccessControlFacet deployed in the last upgrade attempt
-    address private constant NEW_ACCESS_CONTROL_FACET_ADDRESS = 0x5948C896c1bFB1484786dDE70C0c6F1f1dbCb1aF;
+    address private constant NEW_ACCESS_CONTROL_FACET_ADDRESS = 0x6822aC7eB5CdBBb4851F7d1c71f872B3804F149A;
     // Address with upgrade permissions
     address private constant UPGRADER_ADDRESS = 0xC0A7a3AD0e5A53cEF42AB622381D0b27969c4ab5;
 

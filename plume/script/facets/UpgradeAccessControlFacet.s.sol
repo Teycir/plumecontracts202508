@@ -9,7 +9,6 @@ import { PlumeStaking } from "../../src/PlumeStaking.sol";
 import { IERC2535DiamondCutInternal } from "@solidstate/interfaces/IERC2535DiamondCutInternal.sol";
 import { IERC2535DiamondLoupe } from "@solidstate/interfaces/IERC2535DiamondLoupe.sol";
 import { ISolidStateDiamond } from "@solidstate/proxy/diamond/ISolidStateDiamond.sol";
-
 // Facet and Roles
 import { AccessControlFacet } from "../../src/facets/AccessControlFacet.sol";
 

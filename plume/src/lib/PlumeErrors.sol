@@ -3,6 +3,7 @@ pragma solidity ^0.8.25;
 
 /*
  * @title PlumeErrors
+ * @author Eugene Y. Q. Shen, Alp Guneysel
  * @notice Common errors used across Plume contracts
  */
 
@@ -109,11 +110,21 @@ error ValidatorPercentageExceeded();
  */
 error TooManyStakers();
 
+/// @notice Thrown when a percentage value is invalid (e.g., > 100%).
+/// @param percentage The invalid percentage provided (in basis points).
+error InvalidPercentage(uint256 percentage);
+
 // Reward errors
 /*
  * @notice Thrown when trying to add a token that already exists in the reward token list
  */
 error TokenAlreadyExists();
+
+/**
+ * @notice Thrown when trying to re-add a token in the same block it was removed.
+ * @param token The address of the token.
+ */
+error CannotReAddTokenInSameBlock(address token);
 
 /*
  * @notice Thrown when array lengths don't match in a function that expects matching arrays
@@ -129,6 +140,13 @@ error EmptyArray();
  * @notice Thrown when a validator commission exceeds the maximum allowed value
  */
 error CommissionTooHigh();
+
+/**
+ * @notice Error thrown when commission rate exceeds maximum allowed (100%)
+ * @param requested The commission rate requested (scaled by 1e18)
+ * @param max The maximum allowed commission rate (1e18)
+ */
+error CommissionRateTooHigh(uint256 requested, uint256 max);
 
 /*
  * @notice Thrown when a reward rate exceeds the maximum allowed value
@@ -187,11 +205,13 @@ error SlashVoteDurationTooLong();
 // Slashing Errors
 error CannotVoteForSelf();
 error AlreadyVotedToSlash(uint16 targetValidatorId, uint16 voterValidatorId);
-error ValidatorNotActive(uint16 validatorId);
 error ValidatorAlreadySlashed(uint16 validatorId);
 error UnanimityNotReached(uint256 votes, uint256 required);
 error SlashVoteExpired(uint16 targetValidatorId, uint16 voterValidatorId);
 error SlashConditionsNotMet(uint16 validatorId);
+
+/// @param admin Address that is already assigned.
+error AdminAlreadyAssigned(address admin);
 
 // Treasury Errors
 error ZeroAddressToken();
@@ -267,3 +287,67 @@ error InternalInconsistency(string message);
 
 // Validator errors
 error InvalidUpdateType(uint8 providedType);
+
+// --- New Max Commission Errors ---
+error CommissionExceedsMaxAllowed(uint256 requested, uint256 maxAllowed);
+error InvalidMaxCommissionRate(uint256 requested, uint256 limit);
+
+// --- Commission Claim Timelock Errors ---
+error PendingClaimExists(uint16 validatorId, address token);
+error NoPendingClaim(uint16 validatorId, address token);
+error ClaimNotReady(uint16 validatorId, address token, uint256 readyTimestamp);
+
+/// @notice Thrown when cooldown interval is too short relative to max slash vote duration.
+/// @param newCooldownInterval The proposed cooldown interval.
+/// @param currentMaxSlashVoteDuration The current maximum slash vote duration.
+error CooldownTooShortForSlashVote(uint256 newCooldownInterval, uint256 currentMaxSlashVoteDuration);
+
+/// @notice Thrown when max slash vote duration is too long relative to cooldown interval.
+/// @param newMaxSlashVoteDuration The proposed maximum slash vote duration.
+/// @param currentCooldownInterval The current cooldown interval.
+error SlashVoteDurationTooLongForCooldown(uint256 newMaxSlashVoteDuration, uint256 currentCooldownInterval);
+
+/// @notice Thrown when slash vote duration is not shorter than the commission claim timelock.
+/// @param slashVoteDuration The proposed slash vote duration.
+/// @param commissionTimelock The current commission claim timelock.
+error SlashVoteDurationExceedsCommissionTimelock(uint256 slashVoteDuration, uint256 commissionTimelock);
+
+/// @notice Thrown when an address that is not the pending admin tries to accept admin role.
+/// @param caller The address of the unauthorized caller.
+/// @param validatorId The ID of the validator.
+error NotPendingAdmin(address caller, uint16 validatorId);
+
+/// @notice Thrown when trying to accept admin role for a validator with no pending admin.
+/// @param validatorId The ID of the validator.
+error NoPendingAdmin(uint16 validatorId);
+
+/// @notice Thrown when a validator tries to create more commission checkpoints than the allowed limit.
+/// @param validatorId The ID of the validator.
+/// @param max The maximum number of checkpoints allowed.
+error MaxCommissionCheckpointsExceeded(uint16 validatorId, uint256 max);
+
+/// @notice Thrown when attempting to prune all checkpoints from a validator's history, which is not allowed.
+error CannotPruneAllCheckpoints();
+
+/// @notice Thrown when an invalid interval is provided (e.g. zero)
+/// @param interval The invalid interval.
+error InvalidInterval(uint256 interval);
+
+/**
+ * @notice Thrown when an action is attempted on a validator that has been slashed.
+ * @param validatorId The ID of the slashed validator.
+ */
+error ActionOnSlashedValidatorError(uint16 validatorId);
+
+/**
+ * @notice Thrown when an admin tries to clear records for a validator that isn't actually slashed.
+ * @param validatorId The ID of the validator that is not slashed.
+ */
+error ValidatorNotSlashed(uint16 validatorId);
+
+/**
+ * @notice Thrown when a function is not active.
+ */
+error NotActive();
+
+// @audit

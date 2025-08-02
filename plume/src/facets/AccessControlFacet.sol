@@ -18,7 +18,7 @@ import { PlumeStakingStorage } from "../lib/PlumeStakingStorage.sol"; // For pot
 contract AccessControlFacet is IAccessControl, AccessControlInternal {
 
     // Simple flag to prevent re-initialization within this facet's context
-    bool private _initializedAC;
+    // bool private _initializedAC; // REMOVED
 
     // Define all roles locally for clarity and direct access
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
@@ -26,14 +26,17 @@ contract AccessControlFacet is IAccessControl, AccessControlInternal {
     bytes32 public constant UPGRADER_ROLE = PlumeRoles.UPGRADER_ROLE;
     bytes32 public constant VALIDATOR_ROLE = PlumeRoles.VALIDATOR_ROLE;
     bytes32 public constant REWARD_MANAGER_ROLE = PlumeRoles.REWARD_MANAGER_ROLE;
-
+    bytes32 public constant TIMELOCK_ROLE = PlumeRoles.TIMELOCK_ROLE;
     /**
      * @notice Initializes the AccessControl facet, setting up all roles and their admins.
      * @dev Can only be called once, typically by the diamond owner after cutting the facet.
      * Sets up the complete role hierarchy with DEFAULT_ADMIN_ROLE and ADMIN_ROLE at the top.
      */
+
     function initializeAccessControl() external {
-        require(!_initializedAC, "ACF: init"); // AccessControlFacet: Already initialized
+        // require(!_initializedAC, "ACF: init"); // AccessControlFacet: Already initialized // OLD CHECK
+        PlumeStakingStorage.Layout storage $ = PlumeStakingStorage.layout();
+        require(!$.accessControlFacetInitialized, "ACF: init"); // NEW CHECK
 
         // Grant the essential DEFAULT_ADMIN_ROLE to the caller
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -44,6 +47,7 @@ contract AccessControlFacet is IAccessControl, AccessControlInternal {
         // Set up role hierarchy
         // Make ADMIN_ROLE the admin for all other roles (including itself)
         _setRoleAdmin(ADMIN_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(TIMELOCK_ROLE, ADMIN_ROLE);
         _setRoleAdmin(UPGRADER_ROLE, ADMIN_ROLE);
         _setRoleAdmin(VALIDATOR_ROLE, ADMIN_ROLE);
         _setRoleAdmin(REWARD_MANAGER_ROLE, ADMIN_ROLE);
@@ -52,7 +56,8 @@ contract AccessControlFacet is IAccessControl, AccessControlInternal {
         _grantRole(UPGRADER_ROLE, msg.sender);
         _grantRole(REWARD_MANAGER_ROLE, msg.sender);
 
-        _initializedAC = true;
+        // _initializedAC = true; // OLD FLAG
+        $.accessControlFacetInitialized = true; // NEW FLAG
     }
 
     // --- External Functions ---
@@ -103,3 +108,5 @@ contract AccessControlFacet is IAccessControl, AccessControlInternal {
     }
 
 }
+
+// @audit

@@ -1,0 +1,5 @@
+forge-std/=plume/lib/forge-std/src/
+openzeppelin-contracts-upgradeable/=plume/lib/openzeppelin-contracts-upgradeable/contracts/
+openzeppelin-contracts/=plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts/=plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=plume/lib/openzeppelin-contracts-upgradeable/contracts/

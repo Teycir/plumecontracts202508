@@ -1,0 +1,514 @@
+=== PlumeStakingRewardTreasury.sol ===
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import { IPlumeStakingRewardTreasury } from "./interfaces/IPlumeStakingRewardTreasury.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+// Import Plume errors and events
+import {
+    InsufficientBalance,
+    InvalidToken,
+    PlumeTransferFailed,
+    TokenAlreadyAdded,
+    TokenNotRegistered,
+    TokenTransferFailed,
+    ZeroAddressToken,
+    ZeroAmount,
+    ZeroRecipientAddress
+} from "./lib/PlumeErrors.sol";
+import { PlumeReceived, RewardDistributed, RewardTokenAdded } from "./lib/PlumeEvents.sol";
+
+
+/*
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                               ║
+ * ║                          ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦                                ║
+ * ║                                                                               ║
+ * ║                   I N  L O V I N G   M E M O R Y   O F                        ║
+ * ║                                                                               ║
+ * ║                      ╭─────────────────────────────╮                          ║
+ * ║                      │                             │                          ║
+ * ║                      │        E U G E N E          │                          ║
+ * ║                      │          S H E N            │                          ║
+ * ║                      │                             │                          ║
+ * ║                      ╰─────────────────────────────╯                          ║
+ * ║                                                                               ║
+ * ║                              ◆ ◇ ◆ ◇ ◆ ◇ ◆                                    ║
+ * ║                                                                               ║
+ * ║        ┌───────────────────────────────────────────────────────────┐          ║
+ * ║        │                                                           │          ║
+ * ║        │  "Every second spent developing this contract is          │          ║
+ * ║        │               dedicated to Eugene Shen"                   │          ║
+ * ║        │                                                           │          ║
+ * ║        └───────────────────────────────────────────────────────────┘          ║
+ * ║                                                                               ║
+ * ║                      ∞ Forever in our hearts and code ∞                       ║
+ * ║                                                                               ║
+ * ║                          ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦                                ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ */
+
+
+/**
+ * @title PlumeStakingRewardTreasury
+ * @author Eugene Y. Q. Shen, Alp Guneysel
+ * @notice Contract responsible for holding and distributing reward tokens for the PlumeStaking system
+ * @dev This contract is upgradeable using UUPS pattern and uses AccessControl for authorization
+ */
+
+
+
+contract PlumeStakingRewardTreasury is
+    IPlumeStakingRewardTreasury,
+    Initializable,
+    AccessControlUpgradeable,
+    ReentrancyGuardUpgradeable,
+    UUPSUpgradeable
+{
+
+    using SafeERC20 for IERC20;
+
+    // Constants
+    address public constant PLUME_NATIVE = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    // Role constants
+    bytes32 public constant DISTRIBUTOR_ROLE = keccak256("DISTRIBUTOR_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+
+    // State variables
+    address[] private _rewardTokens;
+    mapping(address => bool) private _isRewardToken;
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @dev Initializer that sets up roles
+     * @param admin The address that will have the admin role
+     * @param distributor The address that will have the distributor role (usually the diamond proxy)
+     */
+    function initialize(address admin, address distributor) public initializer {
+        if (admin == address(0)) {
+            revert ZeroAddressToken();
+        }
+        if (distributor == address(0)) {
+            revert ZeroAddressToken();
+        }
+
+        __AccessControl_init();
+        __ReentrancyGuard_init();
+        __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(ADMIN_ROLE, admin);
+        _grantRole(UPGRADER_ROLE, admin);
+        _grantRole(DISTRIBUTOR_ROLE, distributor);
+
+        // Set ADMIN_ROLE as the admin for DISTRIBUTOR_ROLE and UPGRADER_ROLE
+        _setRoleAdmin(DISTRIBUTOR_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(UPGRADER_ROLE, ADMIN_ROLE);
+    }
+
+    /**
+     * @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract.
+     * Called by {upgradeTo} and {upgradeToAndCall}.
+     */
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) {
+        // Authorization is handled by the onlyRole modifier
+    }
+
+    /**
+     * @notice Add a token to the list of reward tokens
+     * @dev Only callable by ADMIN_ROLE
+     * @param token The token address to add
+     */
+    function addRewardToken(
+        address token
+    ) external onlyRole(ADMIN_ROLE) {
+        if (token == address(0)) {
+            revert ZeroAddressToken();
+        }
+        if (_isRewardToken[token]) {
+            revert TokenAlreadyAdded(token);
+        }
+
+        _rewardTokens.push(token);
+        _isRewardToken[token] = true;
+
+        emit RewardTokenAdded(token);
+    }
+
+    /**
+     * @notice Distribute reward to a recipient
+     * @dev Can only be called by an address with DISTRIBUTOR_ROLE
+     * @param token The token address (use PLUME_NATIVE for native PLUME)
+     * @param amount The amount to distribute
+     * @param recipient The recipient address
+     */
+    function distributeReward(
+        address token,
+        uint256 amount,
+        address recipient
+    ) external override nonReentrant onlyRole(DISTRIBUTOR_ROLE) {
+        if (recipient == address(0)) {
+            revert ZeroRecipientAddress();
+        }
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+
+        if (token == PLUME_NATIVE) {
+            // PLUME distribution
+            uint256 balance = address(this).balance;
+            if (balance < amount) {
+                revert InsufficientBalance(token, balance, amount);
+            }
+
+            (bool success,) = recipient.call{ value: amount }("");
+            if (!success) {
+                revert PlumeTransferFailed(recipient, amount);
+            }
+        } else {
+            // ERC20 token distribution
+            if (!_isRewardToken[token]) {
+                revert TokenNotRegistered(token);
+            }
+
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            if (balance < amount) {
+                revert InsufficientBalance(token, balance, amount);
+            }
+
+            // Use SafeERC20 to safely transfer tokens
+            SafeERC20.safeTransfer(IERC20(token), recipient, amount);
+        }
+
+        emit RewardDistributed(token, amount, recipient);
+    }
+
+    /**
+     * @notice Get all reward tokens managed by the treasury
+     * @return An array of token addresses
+     */
+    function getRewardTokens() external view override returns (address[] memory) {
+        return _rewardTokens;
+    }
+
+    /**
+     * @notice Get the balance of a token in the treasury
+     * @param token The token address (use PLUME_NATIVE for native PLUME)
+     * @return The balance
+     */
+    function getBalance(
+        address token
+    ) external view override returns (uint256) {
+        if (token == PLUME_NATIVE) {
+            return address(this).balance;
+        } else {
+            if (!_isRewardToken[token]) {
+                revert TokenNotRegistered(token);
+            }
+            return IERC20(token).balanceOf(address(this));
+        }
+    }
+
+    /**
+     * @notice Check if a token is registered as a reward token
+     * @param token The token address
+     * @return Whether the token is registered
+     */
+    function isRewardToken(
+        address token
+    ) external view returns (bool) {
+        return _isRewardToken[token];
+    }
+
+    /**
+     * @notice Allows the treasury to receive PLUME
+     */
+    receive() external payable {
+        emit PlumeReceived(msg.sender, msg.value);
+    }
+
+}
+
+// @audit
+
+=== PlumeStaking.sol ===
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import { InvalidAmount, InvalidMaxCommissionRate, CooldownTooShortForSlashVote } from "./lib/PlumeErrors.sol";
+import { PlumeStakingStorage } from "./lib/PlumeStakingStorage.sol";
+import { OwnableInternal } from "@solidstate/access/ownable/OwnableInternal.sol";
+import { ISolidStateDiamond, SolidStateDiamond } from "@solidstate/proxy/diamond/SolidStateDiamond.sol";
+
+/*
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                                                                               ║
+ * ║                          ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦                                ║
+ * ║                                                                               ║
+ * ║                   I N  L O V I N G   M E M O R Y   O F                        ║
+ * ║                                                                               ║
+ * ║                      ╭─────────────────────────────╮                          ║
+ * ║                      │                             │                          ║
+ * ║                      │        E U G E N E          │                          ║
+ * ║                      │          S H E N            │                          ║
+ * ║                      │                             │                          ║
+ * ║                      ╰─────────────────────────────╯                          ║
+ * ║                                                                               ║
+ * ║                              ◆ ◇ ◆ ◇ ◆ ◇ ◆                                    ║
+ * ║                                                                               ║
+ * ║        ┌───────────────────────────────────────────────────────────┐          ║
+ * ║        │                                                           │          ║
+ * ║        │  "Every second spent developing this contract is          │          ║
+ * ║        │               dedicated to Eugene Shen"                   │          ║
+ * ║        │                                                           │          ║
+ * ║        └───────────────────────────────────────────────────────────┘          ║
+ * ║                                                                               ║
+ * ║                      ∞ Forever in our hearts and code ∞                       ║
+ * ║                                                                               ║
+ * ║                          ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦                                ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ */
+
+/**
+ * @title PlumeStaking Diamond Proxy
+ * @author Eugene Y. Q. Shen, Alp Guneysel
+ * @notice Main entry point for the Plume Staking Diamond, inheriting SolidStateDiamond.
+ */
+contract PlumeStaking is SolidStateDiamond {
+
+    function initializePlume(
+        address initialOwner, // Keep parameter for flexibility, though constructor sets deployer
+        uint256 minStake,
+        uint256 cooldown,
+        uint256 maxSlashVoteDuration,
+        uint256 maxValidatorCommission
+    ) external virtual onlyOwner {
+        // Although SolidStateDiamond constructor sets owner, allow transferring if needed.
+        PlumeStakingStorage.Layout storage $ = PlumeStakingStorage.layout();
+
+        // Add an initialization check
+        require(!$.initialized, "PlumeStaking: Already initialized");
+
+        // Add check for minStake
+        if (minStake == 0) {
+            revert InvalidAmount(minStake);
+        }
+
+        // --- NEW VALIDATION ---
+        if (cooldown == 0) {
+            revert InvalidAmount(cooldown);
+        }
+        if (maxSlashVoteDuration == 0) {
+            revert InvalidAmount(maxSlashVoteDuration);
+        }
+        if (cooldown <= maxSlashVoteDuration) {
+            revert CooldownTooShortForSlashVote(cooldown, maxSlashVoteDuration);
+        }
+        if (maxValidatorCommission > PlumeStakingStorage.REWARD_PRECISION / 2) { // Max 50%
+            revert InvalidMaxCommissionRate(maxValidatorCommission, PlumeStakingStorage.REWARD_PRECISION / 2);
+        }
+        // --- END NEW VALIDATION ---
+
+        if (initialOwner != address(0) && initialOwner != owner()) {
+            // Use the internal transfer function from Ownable/SafeOwnable
+            // Note: SolidStateDiamond inherits SafeOwnable -> Ownable -> OwnableInternal
+            _transferOwnership(initialOwner);
+        }
+
+        $.minStakeAmount = minStake;
+        $.cooldownInterval = cooldown;
+        $.maxSlashVoteDurationInSeconds = maxSlashVoteDuration;
+        $.maxAllowedValidatorCommission = maxValidatorCommission;
+        $.maxCommissionCheckpoints = 500; // Set a sensible default limit
+        $.initialized = true;
+    }
+
+    // --- View Functions ---
+
+    /**
+     * @notice Checks if the Plume-specific initialization has been performed.
+     */
+    function isInitialized() external view returns (bool) {
+        return PlumeStakingStorage.layout().initialized;
+    }
+
+}
+
+// @audit
+
+=== WPLUME.sol ===
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import { WETH } from "solady/tokens/WETH.sol";
+
+contract WPLUME is WETH {
+    function name() public pure override returns (string memory) {
+        return "Wrapped Plume";
+    }
+    function symbol() public pure override returns (string memory) {
+        return "WPLUME";
+    }
+}
+// @audit
+
+=== Plume.Sol ===
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.25;
+
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import { ERC20BurnableUpgradeable } from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import { ERC20PausableUpgradeable } from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
+import { ERC20PermitUpgradeable } from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+
+/**
+ * @title Plume
+ * @author Eugene Y. Q. Shen
+ * @notice ERC20 token that is the governance token for Plume Network
+ */
+contract Plume is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    ERC20PausableUpgradeable,
+    AccessControlUpgradeable,
+    ERC20PermitUpgradeable,
+    UUPSUpgradeable
+{
+
+    // Constants
+
+    /// @notice Role for the upgrader of Plume
+    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
+    /// @notice Role for the minter of Plume
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    /// @notice Role for the burner of Plume
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    /// @notice Role for the pauser of Plume
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    // Initializer
+
+    /**
+     * @notice Prevent the implementation contract from being initialized or reinitialized
+     * @custom:oz-upgrades-unsafe-allow constructor
+     */
+    constructor() {
+        _disableInitializers();
+    }
+
+    /**
+     * @notice Initialize Plume
+     * @dev Give all roles to the admin address passed into the constructor
+     * @param owner Address of the owner of Plume
+     */
+    function initialize(
+        address owner
+    ) public initializer {
+        __ERC20_init("Plume", "PLUME");
+        __ERC20Burnable_init();
+        __ERC20Pausable_init();
+        __AccessControl_init();
+        __ERC20Permit_init("Plume");
+        __UUPSUpgradeable_init();
+
+        _grantRole(DEFAULT_ADMIN_ROLE, owner);
+        _grantRole(MINTER_ROLE, owner);
+        _grantRole(BURNER_ROLE, owner);
+        _grantRole(PAUSER_ROLE, owner);
+        _grantRole(UPGRADER_ROLE, owner);
+    }
+
+    /// @notice Reinitialize Plume with symbol $PLUME
+    function reinitialize() public reinitializer(1) onlyRole(UPGRADER_ROLE) {
+        __ERC20_init("Plume", "PLUME");
+    }
+
+    // Override Functions
+
+    /**
+     * @notice Revert when `msg.sender` is not authorized to upgrade the contract
+     * @param newImplementation Address of the new implementation
+     */
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyRole(UPGRADER_ROLE) { }
+
+    /**
+     * @notice Update the balance of `from` and `to` after token transfer
+     * @param from Address to transfer tokens from
+     * @param to Address to transfer tokens to
+     * @param value Amount of tokens to transfer
+     */
+    function _update(
+        address from,
+        address to,
+        uint256 value
+    ) internal override(ERC20Upgradeable, ERC20PausableUpgradeable) {
+        super._update(from, to, value);
+    }
+
+    // User Functions
+
+    /**
+     * @notice Mint new Plume tokens
+     * @dev Only the minter can mint new tokens
+     * @param to Address to mint tokens to
+     * @param amount Amount of tokens to mint
+     */
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+        _mint(to, amount);
+    }
+
+    /**
+     * @notice Burn Plume tokens
+     * @dev Only the burner can burn tokens
+     * @param from Address to burn tokens from
+     * @param amount Amount of tokens to burn
+     */
+    function burn(address from, uint256 amount) external onlyRole(BURNER_ROLE) {
+        _burn(from, amount);
+    }
+
+    /**
+     * @notice Pause the contract
+     * @dev Only the pauser can pause the contract
+     */
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @notice Unpause the contract
+     * @dev Only the pauser can unpause the contract
+     */
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+}
+
+// @audit

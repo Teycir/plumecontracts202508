@@ -4,9 +4,9 @@ pragma solidity ^0.8.25;
 import { Script, console2 } from "forge-std/Script.sol";
 
 // --- SolidState Diamond Interfaces ---
-import { IERC2535DiamondCutInternal } from "solidstate-solidity/interfaces/IERC2535DiamondCutInternal.sol";
-import { IERC2535DiamondLoupe } from "solidstate-solidity/interfaces/IERC2535DiamondLoupe.sol";
-import { ISolidStateDiamond } from "solidstate-solidity/proxy/diamond/SolidStateDiamond.sol";
+import { IERC2535DiamondCutInternal } from "@solidstate/interfaces/IERC2535DiamondCutInternal.sol";
+import { IERC2535DiamondLoupe } from "@solidstate/interfaces/IERC2535DiamondLoupe.sol";
+import { ISolidStateDiamond } from "@solidstate/proxy/diamond/SolidStateDiamond.sol";
 
 // --- Plume Facets ---
 import { ValidatorFacet } from "../../src/facets/ValidatorFacet.sol";
@@ -46,7 +46,7 @@ contract UpgradeValidatorFacet is Script {
         selectors[0] =
             bytes4(keccak256(bytes("addValidator(uint16,uint256,address,address,string,string,address,uint256)")));
         selectors[1] = bytes4(keccak256(bytes("setValidatorCapacity(uint16,uint256)")));
-        selectors[2] = bytes4(keccak256(bytes("claimValidatorCommission(uint16,address)")));
+        selectors[2] = bytes4(keccak256(bytes("requestCommissionClaim(uint16,address)")));
         selectors[3] = bytes4(keccak256(bytes("getValidatorInfo(uint16)")));
         selectors[4] = bytes4(keccak256(bytes("getValidatorStats(uint16)")));
         selectors[5] = bytes4(keccak256(bytes("getUserValidators(address)")));

@@ -121,6 +121,9 @@ contract ReserveStaking is AccessControlUpgradeable, UUPSUpgradeable, Reentrancy
      */
     error Unauthorized(address sender, address authorizedUser);
 
+    /// @notice Indicates a failure because the given address is not a multisig address
+    error InvalidMultisigAddress();
+
     /// @notice Indicates a failure because the contract is paused for deposits
     error DepositPaused();
 
@@ -217,6 +220,9 @@ contract ReserveStaking is AccessControlUpgradeable, UUPSUpgradeable, Reentrancy
     function setMultisig(
         address multisig
     ) external nonReentrant onlyTimelock {
+        if (multisig == address(0) || multisig.code.length == 0) {
+            revert InvalidMultisigAddress();
+        }
         _getReserveStakingStorage().multisig = multisig;
     }
 
@@ -357,9 +363,9 @@ function adminBridge(
             uint256 newBalance = stone.balanceOf(address(this));
             actualStoneAmount = newBalance - previousBalance;
             userState.stoneAmountSeconds += userState.stoneAmountStaked * (timestamp - userState.stoneLastUpdate);
-            userState.stoneAmountStaked += stoneAmount;
+            userState.stoneAmountStaked += actualStoneAmount;
             userState.stoneLastUpdate = timestamp;
-            $.stoneTotalAmountStaked += stoneAmount;
+            $.stoneTotalAmountStaked += actualStoneAmount;
         }
 
         emit Staked(msg.sender, actualSbtcAmount, actualStoneAmount);

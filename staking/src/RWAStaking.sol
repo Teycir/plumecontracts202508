@@ -118,6 +118,9 @@ contract RWAStaking is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
      */
     error Unauthorized(address sender, address authorizedUser);
 
+    /// @notice Indicates a failure because the given address is not a multisig address
+    error InvalidMultisigAddress();
+
     /// @notice Indicates a failure because the contract is paused for deposits
     error DepositPaused();
 
@@ -222,6 +225,9 @@ contract RWAStaking is AccessControlUpgradeable, UUPSUpgradeable, ReentrancyGuar
     function setMultisig(
         address multisig
     ) external nonReentrant onlyTimelock {
+        if (multisig == address(0) || multisig.code.length == 0) {
+            revert InvalidMultisigAddress();
+        }
         _getRWAStakingStorage().multisig = multisig;
     }
 
@@ -462,7 +468,7 @@ function adminBridge(
         return _getRWAStakingStorage().endTime;
     }
 
-    /// @notice Returns true if the RWAStaking contract is pauseWhether the RWAStaking contract is paused for deposits
+    /// @notice Returns true if the RWAStaking contract is paused
     function isPaused() external view returns (bool) {
         return _getRWAStakingStorage().paused;
     }

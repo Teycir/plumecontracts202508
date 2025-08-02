@@ -1,0 +1,965 @@
+**THIS CHECKLIST IS NOT COMPLETE**. Use `--show-ignored-findings` to show all the results.
+Summary
+ - [arbitrary-send-eth](#arbitrary-send-eth) (3 results) (High)
+ - [weak-prng](#weak-prng) (1 results) (High)
+ - [controlled-delegatecall](#controlled-delegatecall) (2 results) (High)
+ - [incorrect-exp](#incorrect-exp) (1 results) (High)
+ - [unprotected-upgrade](#unprotected-upgrade) (2 results) (High)
+ - [divide-before-multiply](#divide-before-multiply) (11 results) (Medium)
+ - [incorrect-equality](#incorrect-equality) (8 results) (Medium)
+ - [locked-ether](#locked-ether) (5 results) (Medium)
+ - [uninitialized-local](#uninitialized-local) (10 results) (Medium)
+ - [unused-return](#unused-return) (23 results) (Medium)
+## arbitrary-send-eth
+Impact: High
+Confidence: Medium
+ - [ ] ID-0
+[Spin._safeTransferPlume(address,uint256)](plume/src/spin/Spin.sol#L579-L583) sends eth to arbitrary user
+	Dangerous calls:
+	- [(success,None) = _to.call{value: _amount}()](plume/src/spin/Spin.sol#L581)
+
+plume/src/spin/Spin.sol#L579-L583
+
+
+ - [ ] ID-1
+[ManagementFacet.adminWithdraw(address,uint256,address)](plume/src/facets/ManagementFacet.sol#L134-L171) sends eth to arbitrary user
+	Dangerous calls:
+	- [(success,None) = address(recipient).call{value: amount}()](plume/src/facets/ManagementFacet.sol#L156)
+
+plume/src/facets/ManagementFacet.sol#L134-L171
+
+
+ - [ ] ID-2
+[PlumeStakingRewardTreasury.distributeReward(address,uint256,address)](plume/src/PlumeStakingRewardTreasury.sol#L160-L199) sends eth to arbitrary user
+	Dangerous calls:
+	- [(success,None) = recipient.call{value: amount}()](plume/src/PlumeStakingRewardTreasury.sol#L179)
+
+plume/src/PlumeStakingRewardTreasury.sol#L160-L199
+
+
+## weak-prng
+Impact: High
+Confidence: Medium
+ - [ ] ID-3
+[Spin.determineReward(uint256,uint256)](plume/src/spin/Spin.sol#L278-L304) uses a weak PRNG: "[dayOfWeek = uint8(daysSinceStart % 7)](plume/src/spin/Spin.sol#L287)" 
+
+plume/src/spin/Spin.sol#L278-L304
+
+
+## controlled-delegatecall
+Impact: High
+Confidence: Medium
+ - [ ] ID-4
+[DiamondWritableInternal._initialize(address,bytes)](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableInternal.sol#L276-L295) uses delegatecall to a input-controlled function id
+	- [(success,None) = target.delegatecall(data)](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableInternal.sol#L286)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableInternal.sol#L276-L295
+
+
+ - [ ] ID-5
+[ECDSAMultisigWalletInternal._executeCall(IECDSAMultisigWalletInternal.Parameters)](plume/src/lib/vendor/solidstate-solidity/contracts/multisig/ECDSAMultisigWalletInternal.sol#L89-L115) uses delegatecall to a input-controlled function id
+	- [(success,returndata) = parameters.target.delegatecall(parameters.data)](plume/src/lib/vendor/solidstate-solidity/contracts/multisig/ECDSAMultisigWalletInternal.sol#L98-L100)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/multisig/ECDSAMultisigWalletInternal.sol#L89-L115
+
+
+## incorrect-exp
+Impact: High
+Confidence: Medium
+ - [ ] ID-6
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) has bitwise-xor operator ^ instead of the exponentiation operator **: 
+	 - [inverse = (3 * denominator) ^ 2](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L257)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+## unprotected-upgrade
+Impact: High
+Confidence: High
+ - [ ] ID-7
+[Raffle](plume/src/spin/Raffle.sol#L17-L428) is an upgradeable contract that does not protect its initialize functions: [Raffle.initialize(address,address)](plume/src/spin/Raffle.sol#L106-L118). Anyone can delete the contract with: [UUPSUpgradeable.upgradeToAndCall(address,bytes)](plume/lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol#L92-L95)
+plume/src/spin/Raffle.sol#L17-L428
+
+
+ - [ ] ID-8
+[Spin](plume/src/spin/Spin.sol#L13-L597) is an upgradeable contract that does not protect its initialize functions: [Spin.initialize(address,address)](plume/src/spin/Spin.sol#L90-L135). Anyone can delete the contract with: [UUPSUpgradeable.upgradeToAndCall(address,bytes)](plume/lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol#L92-L95)
+plume/src/spin/Spin.sol#L13-L597
+
+
+## divide-before-multiply
+Impact: Medium
+Confidence: Medium
+ - [ ] ID-9
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L265)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-10
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L264)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-11
+[Math.invMod(uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L315-L361) performs a multiplication on the result of a division:
+	- [quotient = gcd / remainder](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L337)
+	- [(gcd,remainder) = (remainder,gcd - remainder * quotient)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L339-L346)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L315-L361
+
+
+ - [ ] ID-12
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [low = low / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L245)
+	- [result = low * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L272)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-13
+[PlumeRewardLogic.updateRewardPerTokenForValidator(PlumeStakingStorage.Layout,address,uint16)](plume/src/lib/PlumeRewardLogic.sol#L135-L197) performs a multiplication on the result of a division:
+	- [grossRewardForValidatorThisSegment = (totalStaked * rewardPerTokenIncrease) / PlumeStakingStorage.REWARD_PRECISION](plume/src/lib/PlumeRewardLogic.sol#L181-L182)
+	- [commissionDeltaForValidator = (grossRewardForValidatorThisSegment * commissionRateForSegment) / PlumeStakingStorage.REWARD_PRECISION](plume/src/lib/PlumeRewardLogic.sol#L185-L187)
+
+plume/src/lib/PlumeRewardLogic.sol#L135-L197
+
+
+ - [ ] ID-14
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L263)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-15
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L266)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-16
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L261)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-17
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse *= 2 - denominator * inverse](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L262)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+ - [ ] ID-18
+[PlumeRewardLogic._calculateRewardsCore(PlumeStakingStorage.Layout,address,uint16,address,uint256,uint256)](plume/src/lib/PlumeRewardLogic.sol#L212-L360) performs a multiplication on the result of a division:
+	- [grossRewardForSegment = (userStakedAmount * rewardPerTokenDeltaForUserInSegment) / PlumeStakingStorage.REWARD_PRECISION](plume/src/lib/PlumeRewardLogic.sol#L340-L341)
+	- [commissionForThisSegment = _ceilDiv(grossRewardForSegment * effectiveCommissionRate,PlumeStakingStorage.REWARD_PRECISION)](plume/src/lib/PlumeRewardLogic.sol#L347-L348)
+
+plume/src/lib/PlumeRewardLogic.sol#L212-L360
+
+
+ - [ ] ID-19
+[Math.mulDiv(uint256,uint256,uint256)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275) performs a multiplication on the result of a division:
+	- [denominator = denominator / twos](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L242)
+	- [inverse = (3 * denominator) ^ 2](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L257)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/utils/math/Math.sol#L204-L275
+
+
+## incorrect-equality
+Impact: Medium
+Confidence: High
+ - [ ] ID-20
+[Spin.isSameDay(uint16,uint8,uint8,uint16,uint8,uint8)](plume/src/spin/Spin.sol#L368-L377) uses a dangerous strict equality:
+	- [(year1 == year2 && month1 == month2 && day1 == day2)](plume/src/spin/Spin.sol#L376)
+
+plume/src/spin/Spin.sol#L368-L377
+
+
+ - [ ] ID-21
+[Spin._computeStreak(address,uint256,bool)](plume/src/spin/Spin.sol#L307-L325) uses a dangerous strict equality:
+	- [today == lastDaySpun](plume/src/spin/Spin.sol#L318)
+
+plume/src/spin/Spin.sol#L307-L325
+
+
+ - [ ] ID-22
+[PlumeRewardLogic.createRewardRateCheckpoint(PlumeStakingStorage.Layout,address,uint16,uint256)](plume/src/lib/PlumeRewardLogic.sol#L715-L748) uses a dangerous strict equality:
+	- [len > 0 && checkpoints[len - 1].timestamp == block.timestamp](plume/src/lib/PlumeRewardLogic.sol#L735)
+
+plume/src/lib/PlumeRewardLogic.sol#L715-L748
+
+
+ - [ ] ID-23
+[RewardsFacet.addRewardToken(address,uint256,uint256)](plume/src/facets/RewardsFacet.sol#L153-L202) uses a dangerous strict equality:
+	- [$.tokenRemovalTimestamps[token] == block.timestamp](plume/src/facets/RewardsFacet.sol#L170)
+
+plume/src/facets/RewardsFacet.sol#L153-L202
+
+
+ - [ ] ID-24
+[Spin._computeStreak(address,uint256,bool)](plume/src/spin/Spin.sol#L307-L325) uses a dangerous strict equality:
+	- [today == lastDaySpun + 1](plume/src/spin/Spin.sol#L321)
+
+plume/src/spin/Spin.sol#L307-L325
+
+
+ - [ ] ID-25
+[PlumeRewardLogic.getDistinctTimestamps(PlumeStakingStorage.Layout,uint16,address,uint256,uint256)](plume/src/lib/PlumeRewardLogic.sol#L440-L537) uses a dangerous strict equality:
+	- [periodStart == periodEnd](plume/src/lib/PlumeRewardLogic.sol#L459)
+
+plume/src/lib/PlumeRewardLogic.sol#L440-L537
+
+
+ - [ ] ID-26
+[Spin.handleRandomness(uint256,uint256[])](plume/src/spin/Spin.sol#L207-L265) uses a dangerous strict equality:
+	- [currentWeek == lastJackpotClaimWeek](plume/src/spin/Spin.sol#L227)
+
+plume/src/spin/Spin.sol#L207-L265
+
+
+ - [ ] ID-27
+[PlumeRewardLogic.createCommissionRateCheckpoint(PlumeStakingStorage.Layout,uint16,uint256)](plume/src/lib/PlumeRewardLogic.sol#L757-L786) uses a dangerous strict equality:
+	- [len > 0 && checkpoints[len - 1].timestamp == block.timestamp](plume/src/lib/PlumeRewardLogic.sol#L773)
+
+plume/src/lib/PlumeRewardLogic.sol#L757-L786
+
+
+## locked-ether
+Impact: Medium
+Confidence: High
+ - [ ] ID-28
+Contract locking ether found:
+	Contract [ManagedProxyMock](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyMock.sol#L7-L33) has payable functions:
+	 - [Proxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L19-L45)
+	 - [IProxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/IProxy.sol#L8)
+	 - [ManagedProxyMock.receive()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyMock.sol#L32)
+	But does not have a function to withdraw the ether
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyMock.sol#L7-L33
+
+
+ - [ ] ID-29
+Contract locking ether found:
+	Contract [UpgradeableProxyOwnableMock](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyOwnableMock.sol#L7-L17) has payable functions:
+	 - [Proxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L19-L45)
+	 - [IProxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/IProxy.sol#L8)
+	 - [UpgradeableProxyOwnableMock.receive()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyOwnableMock.sol#L16)
+	But does not have a function to withdraw the ether
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyOwnableMock.sol#L7-L17
+
+
+ - [ ] ID-30
+Contract locking ether found:
+	Contract [ManagedProxyOwnableMock](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyOwnableMock.sol#L7-L35) has payable functions:
+	 - [Proxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L19-L45)
+	 - [IProxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/IProxy.sol#L8)
+	 - [ManagedProxyOwnableMock.receive()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyOwnableMock.sol#L34)
+	But does not have a function to withdraw the ether
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyOwnableMock.sol#L7-L35
+
+
+ - [ ] ID-31
+Contract locking ether found:
+	Contract [ProxyMock](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/ProxyMock.sol#L7-L17) has payable functions:
+	 - [Proxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L19-L45)
+	 - [IProxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/IProxy.sol#L8)
+	But does not have a function to withdraw the ether
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/ProxyMock.sol#L7-L17
+
+
+ - [ ] ID-32
+Contract locking ether found:
+	Contract [UpgradeableProxyMock](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyMock.sol#L7-L24) has payable functions:
+	 - [Proxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L19-L45)
+	 - [IProxy.fallback()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/IProxy.sol#L8)
+	 - [UpgradeableProxyMock.receive()](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyMock.sol#L23)
+	But does not have a function to withdraw the ether
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyMock.sol#L7-L24
+
+
+## uninitialized-local
+Impact: Medium
+Confidence: Medium
+ - [ ] ID-33
+[UintUtils.toOctString(uint256).length](plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L159) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L159
+
+
+ - [ ] ID-34
+[DiamondWritableInternal._diamondCut(IERC2535DiamondCutInternal.FacetCut[],address,bytes).slug](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableInternal.sol#L36) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableInternal.sol#L36
+
+
+ - [ ] ID-35
+[IncrementalMerkleTree.pop(IncrementalMerkleTree.Tree).row](plume/src/lib/vendor/solidstate-solidity/contracts/data/IncrementalMerkleTree.sol#L102) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/data/IncrementalMerkleTree.sol#L102
+
+
+ - [ ] ID-36
+[UintUtils.toHexString(uint256).length](plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L236) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L236
+
+
+ - [ ] ID-37
+[SolidStateDiamond.constructor().selectorIndex](plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol#L32) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamond.sol#L32
+
+
+ - [ ] ID-38
+[UintUtils.toString(uint256,uint256).length](plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L40) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L40
+
+
+ - [ ] ID-39
+[UintUtils.toBinString(uint256).length](plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L107) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/utils/UintUtils.sol#L107
+
+
+ - [ ] ID-40
+[ECDSAMultisigWalletInternal._verifySignatures(bytes,IECDSAMultisigWalletInternal.Signature[]).signerBitmap](plume/src/lib/vendor/solidstate-solidity/contracts/multisig/ECDSAMultisigWalletInternal.sol#L133) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/multisig/ECDSAMultisigWalletInternal.sol#L133
+
+
+ - [ ] ID-41
+[Raffle.handleWinnerSelection(uint256,uint256[]).winnerAddress](plume/src/spin/Raffle.sol#L251) is a local variable never initialized
+
+plume/src/spin/Raffle.sol#L251
+
+
+ - [ ] ID-42
+[IncrementalMerkleTree.push(IncrementalMerkleTree.Tree,bytes32).row](plume/src/lib/vendor/solidstate-solidity/contracts/data/IncrementalMerkleTree.sol#L74) is a local variable never initialized
+
+plume/src/lib/vendor/solidstate-solidity/contracts/data/IncrementalMerkleTree.sol#L74
+
+
+## unused-return
+Impact: Medium
+Confidence: Medium
+ - [ ] ID-43
+[ERC1155EnumerableInternal._beforeTokenTransfer(address,address,address,uint256[],uint256[],bytes)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128) ignores return value by [tokenAccounts[id].add(to)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L118)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128
+
+
+ - [ ] ID-44
+[ERC721BaseInternal._transfer(address,address,uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130) ignores return value by [l.tokenOwners.set(tokenId,to)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L125)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130
+
+
+ - [ ] ID-45
+[AccessControlInternal._revokeRole(bytes32,address)](plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L104-L107) ignores return value by [AccessControlStorage.layout().roles[role].members.remove(account)](plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L105)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L104-L107
+
+
+ - [ ] ID-46
+[ERC721BaseInternal._burn(uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L93-L107) ignores return value by [l.holderTokens[owner].remove(tokenId)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L100)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L93-L107
+
+
+ - [ ] ID-47
+[ERC1155EnumerableInternal._beforeTokenTransfer(address,address,address,uint256[],uint256[],bytes)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128) ignores return value by [toTokens.add(id)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L119)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128
+
+
+ - [ ] ID-48
+[ERC721BaseInternal._mint(address,uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L65-L77) ignores return value by [l.tokenOwners.set(tokenId,to)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L74)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L65-L77
+
+
+ - [ ] ID-49
+[ERC721BaseInternal._mint(address,uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L65-L77) ignores return value by [l.holderTokens[to].add(tokenId)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L73)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L65-L77
+
+
+ - [ ] ID-50
+[ERC721BaseInternal._burn(uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L93-L107) ignores return value by [l.tokenOwners.remove(tokenId)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L101)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L93-L107
+
+
+ - [ ] ID-51
+[ERC1155EnumerableInternal._beforeTokenTransfer(address,address,address,uint256[],uint256[],bytes)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128) ignores return value by [tokenAccounts[id].remove(from)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L111)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128
+
+
+ - [ ] ID-52
+[EnumerableMapAddressToAddressMock.at(uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapAddressToAddressMock.sol#L12-L14) ignores return value by [map.at(index)](plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapAddressToAddressMock.sol#L13)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapAddressToAddressMock.sol#L12-L14
+
+
+ - [ ] ID-53
+[ERC1967Utils.upgradeBeaconToAndCall(address,bytes)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L157-L166) ignores return value by [Address.functionDelegateCall(IBeacon(newBeacon).implementation(),data)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L162)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L157-L166
+
+
+ - [ ] ID-54
+[EnumerableMapUintToAddressMock.at(uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapUintToAddressMock.sol#L12-L14) ignores return value by [map.at(index)](plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapUintToAddressMock.sol#L13)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/data/EnumerableMapUintToAddressMock.sol#L12-L14
+
+
+ - [ ] ID-55
+[ERC721BaseInternal._transfer(address,address,uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130) ignores return value by [l.holderTokens[from].remove(tokenId)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L123)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130
+
+
+ - [ ] ID-56
+[Raffle.spendRaffle(uint256,uint256)](plume/src/spin/Raffle.sol#L189-L211) ignores return value by [(None,None,None,None,userRaffleTickets,None,None) = spinContract.getUserData(msg.sender)](plume/src/spin/Raffle.sol#L193)
+
+plume/src/spin/Raffle.sol#L189-L211
+
+
+ - [ ] ID-57
+[RewardsFacet._earned(address,address,uint16)](plume/src/facets/RewardsFacet.sol#L100-L112) ignores return value by [(userRewardDelta,None,None) = PlumeRewardLogic.calculateRewardsWithCheckpoints($,user,validatorId,token,userStakedAmount)](plume/src/facets/RewardsFacet.sol#L107-L108)
+
+plume/src/facets/RewardsFacet.sol#L100-L112
+
+
+ - [ ] ID-58
+[AccessControlInternal._grantRole(bytes32,address)](plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L94-L97) ignores return value by [AccessControlStorage.layout().roles[role].members.add(account)](plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L95)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L94-L97
+
+
+ - [ ] ID-59
+[ERC721BaseInternal._transfer(address,address,uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130) ignores return value by [l.holderTokens[to].add(tokenId)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L124)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseInternal.sol#L109-L130
+
+
+ - [ ] ID-60
+[ERC1155EnumerableInternal._beforeTokenTransfer(address,address,address,uint256[],uint256[],bytes)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128) ignores return value by [fromTokens.remove(id)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L112)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/enumerable/ERC1155EnumerableInternal.sol#L84-L128
+
+
+ - [ ] ID-61
+[RewardsFacet._earnedView(address,address,uint16)](plume/src/facets/RewardsFacet.sol#L604-L617) ignores return value by [(userRewardDelta,None,None) = PlumeRewardLogic.calculateRewardsWithCheckpointsView($,user,validatorId,token,userStakedAmount)](plume/src/facets/RewardsFacet.sol#L612-L613)
+
+plume/src/facets/RewardsFacet.sol#L604-L617
+
+
+ - [ ] ID-62
+[ERC1967Utils.upgradeToAndCall(address,bytes)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L67-L76) ignores return value by [Address.functionDelegateCall(newImplementation,data)](plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L72)
+
+plume/lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Utils.sol#L67-L76
+
+
+ - [ ] ID-63
+[RewardsFacet.getPendingRewardForValidator(address,uint16,address)](plume/src/facets/RewardsFacet.sol#L821-L837) ignores return value by [(userRewardDelta,None,None) = PlumeRewardLogic.calculateRewardsWithCheckpoints($,user,validatorId,token,userStakedAmount)](plume/src/facets/RewardsFacet.sol#L833-L834)
+
+plume/src/facets/RewardsFacet.sol#L821-L837
+
+
+ - [ ] ID-64
+[ERC721EnumerableInternal._tokenByIndex(uint256)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/enumerable/ERC721EnumerableInternal.sol#L33-L37) ignores return value by [(tokenId,None) = ERC721BaseStorage.layout().tokenOwners.at(index)](plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/enumerable/ERC721EnumerableInternal.sol#L36)
+
+plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/enumerable/ERC721EnumerableInternal.sol#L33-L37
+
+
+ - [ ] ID-65
+[RewardsFacet._validateTokenForClaim(address,address)](plume/src/facets/RewardsFacet.sol#L397-L434) ignores return value by [(userRewardDelta,None,None) = PlumeRewardLogic.calculateRewardsWithCheckpointsView($,user,validatorId,token,userStakedAmount)](plume/src/facets/RewardsFacet.sol#L420-L422)
+
+plume/src/facets/RewardsFacet.sol#L397-L434
+# Aderyn Analysis Report
+
+This report was generated by [Aderyn](https://github.com/Cyfrin/aderyn), a static analysis tool built by [Cyfrin](https://cyfrin.io), a blockchain security company. This report is not a substitute for manual audit or security review. It should not be relied upon for any purpose other than to assist in the identification of potential security vulnerabilities.
+# Table of Contents
+
+- [Aderyn Analysis Report](#aderyn-analysis-report)
+- [Table of Contents](#table-of-contents)
+- [Summary](#summary)
+	- [Files Summary](#files-summary)
+	- [Files Details](#files-details)
+	- [Issue Summary](#issue-summary)
+- [High Issues](#high-issues)
+	- [H-1: `abi.encodePacked()` Hash Collision](#h-1-abiencodepacked-hash-collision)
+	- [H-2: Unsafe Casting of integers](#h-2-unsafe-casting-of-integers)
+	- [H-3: Contract Name Reused in Different Files](#h-3-contract-name-reused-in-different-files)
+	- [H-4: Yul block contains `return`](#h-4-yul-block-contains-return)
+	- [H-5: ETH transferred without address checks](#h-5-eth-transferred-without-address-checks)
+	- [H-6: Weak Randomness](#h-6-weak-randomness)
+	- [H-7: Contract locks Ether without a withdraw function](#h-7-contract-locks-ether-without-a-withdraw-function)
+	- [H-8: Reentrancy: State change after external call](#h-8-reentrancy-state-change-after-external-call)
+
+# Summary
+
+## Files Summary
+
+| Key | Value |
+| --- | --- |
+| .sol Files | 299 |
+| Total nSLOC | 12367 |
+
+
+## Files Details
+
+| Filepath | nSLOC |
+| --- | --- |
+| src/Plume.sol | 68 |
+| src/PlumeStaking.sol | 44 |
+| src/PlumeStakingRewardTreasury.sol | 127 |
+| src/facets/AccessControlFacet.sol | 49 |
+| src/facets/ManagementFacet.sol | 412 |
+| src/facets/RewardsFacet.sol | 509 |
+| src/facets/StakingFacet.sol | 649 |
+| src/facets/ValidatorFacet.sol | 659 |
+| src/helpers/ArbSys.sol | 7 |
+| src/interfaces/IAccessControl.sol | 11 |
+| src/interfaces/IDateTime.sol | 47 |
+| src/interfaces/IDeploy.sol | 6 |
+| src/interfaces/IDeployer.sol | 17 |
+| src/interfaces/IPlumeStaking.sol | 68 |
+| src/interfaces/IPlumeStakingRewardTreasury.sol | 8 |
+| src/interfaces/ISupraRouterContract.sol | 22 |
+| src/lib/PlumeErrors.sol | 82 |
+| src/lib/PlumeEvents.sol | 109 |
+| src/lib/PlumeRewardLogic.sol | 539 |
+| src/lib/PlumeRoles.sol | 8 |
+| src/lib/PlumeStakingStorage.sol | 106 |
+| src/lib/PlumeValidatorLogic.sol | 84 |
+| **Total** | **12367** |
+
+
+## Issue Summary
+
+| Category | No. of Issues |
+| --- | --- |
+| High | 8 |
+
+
+# High Issues
+
+## H-1: `abi.encodePacked()` Hash Collision
+
+abi.encodePacked() should not be used with dynamic types when passing the result to a hash function such as `keccak256()`. Use `abi.encode()` instead which will pad items to 32 bytes, preventing hash collisions: https://docs.soliditylang.org/en/v0.8.13/abi-spec.html#non-standard-packed-mode. (e.g. `abi.encodePacked(0x123,0x456)` => `0x123456` => `abi.encodePacked(0x1,0x23456)`, but `abi.encode(0x123,0x456)` => `0x0...1230...456`). Unless there is a compelling reason, `abi.encode` should be preferred. If there is only one argument to `abi.encodePacked()` it can often be cast to `bytes()` or `bytes32()` instead: https://ethereum.stackexchange.com/questions/30912/how-to-compare-strings-in-solidity#answer-82739. If all arguments are strings and or bytes, `bytes.concat()` should be used instead.
+
+<details><summary>6 Found Instances</summary>
+
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol [Line: 56](../plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/AccessControlInternal.sol#L56)
+
+	```solidity
+	                    abi.encodePacked(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/factory/MinimalProxyFactory.sol [Line: 68](../plume/src/lib/vendor/solidstate-solidity/contracts/factory/MinimalProxyFactory.sol#L68)
+
+	```solidity
+	            abi.encodePacked(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/metadata/ERC1155Metadata.sol [Line: 29](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/metadata/ERC1155Metadata.sol#L29)
+
+	```solidity
+	            return string(abi.encodePacked(baseURI, tokenIdURI));
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/metadata/ERC1155Metadata.sol [Line: 31](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC1155/metadata/ERC1155Metadata.sol#L31)
+
+	```solidity
+	            return string(abi.encodePacked(baseURI, tokenId.toDecString()));
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC721/metadata/ERC721MetadataInternal.sol [Line: 53](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/metadata/ERC721MetadataInternal.sol#L53)
+
+	```solidity
+	            return string(abi.encodePacked(baseURI, tokenIdURI));
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC721/metadata/ERC721MetadataInternal.sol [Line: 55](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/metadata/ERC721MetadataInternal.sol#L55)
+
+	```solidity
+	            return string(abi.encodePacked(baseURI, tokenId.toDecString()));
+	```
+
+</details>
+
+
+
+## H-2: Unsafe Casting of integers
+
+Downcasting int/uints in Solidity can be unsafe due to the potential for data loss and unintended behavior.When downcasting a larger integer type to a smaller one (e.g., uint256 to uint128), the value may exceed the range of the target type,leading to truncation and loss of significant digits. Use OpenZeppelin's SafeCast library to safely downcast integers.
+
+<details><summary>1 Found Instances</summary>
+
+
+- Found in src/spin/DateTime.sol [Line: 263](../plume/src/spin/DateTime.sol#L263)
+
+	```solidity
+	        return uint8(weekNumber);
+	```
+
+</details>
+
+
+
+## H-3: Contract Name Reused in Different Files
+
+When compiling contracts with certain development frameworks (for example: Truffle), having contracts with the same name across different files can lead to one being overwritten.
+
+<details><summary>12 Found Instances</summary>
+
+
+- Found in src/interfaces/IAccessControl.sol [Line: 8](../plume/src/interfaces/IAccessControl.sol#L8)
+
+	```solidity
+	interface IAccessControl {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/access/access_control/IAccessControl.sol [Line: 10](../plume/src/lib/vendor/solidstate-solidity/contracts/access/access_control/IAccessControl.sol#L10)
+
+	```solidity
+	interface IAccessControl is IAccessControlInternal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/cryptography/ECDSA.sol [Line: 9](../plume/src/lib/vendor/solidstate-solidity/contracts/cryptography/ECDSA.sol#L9)
+
+	```solidity
+	library ECDSA {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/interfaces/IERC165.sol [Line: 11](../plume/src/lib/vendor/solidstate-solidity/contracts/interfaces/IERC165.sol#L11)
+
+	```solidity
+	interface IERC165 is IERC165Internal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/interfaces/IERC20.sol [Line: 11](../plume/src/lib/vendor/solidstate-solidity/contracts/interfaces/IERC20.sol#L11)
+
+	```solidity
+	interface IERC20 is IERC20Internal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol [Line: 11](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L11)
+
+	```solidity
+	abstract contract Proxy is IProxy {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/security/initializable/Initializable.sol [Line: 8](../plume/src/lib/vendor/solidstate-solidity/contracts/security/initializable/Initializable.sol#L8)
+
+	```solidity
+	abstract contract Initializable is IInitializable, InitializableInternal {}
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC20/metadata/IERC20Metadata.sol [Line: 10](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC20/metadata/IERC20Metadata.sol#L10)
+
+	```solidity
+	interface IERC20Metadata is IERC20MetadataInternal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC20/permit/IERC20Permit.sol [Line: 11](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC20/permit/IERC20Permit.sol#L11)
+
+	```solidity
+	interface IERC20Permit is IERC20PermitInternal, IERC2612 {}
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/Math.sol [Line: 5](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/Math.sol#L5)
+
+	```solidity
+	library Math {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/SafeCast.sol [Line: 9](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/SafeCast.sol#L9)
+
+	```solidity
+	library SafeCast {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/SafeERC20.sol [Line: 12](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/SafeERC20.sol#L12)
+
+	```solidity
+	library SafeERC20 {
+	```
+
+</details>
+
+
+
+## H-4: Yul block contains `return`
+
+This causes the transaction execution to halt, and nothing after that call will execute including code following the assembly block.
+
+<details><summary>1 Found Instances</summary>
+
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol [Line: 42](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/Proxy.sol#L42)
+
+	```solidity
+	                return(0, returndatasize())
+	```
+
+</details>
+
+
+
+## H-5: ETH transferred without address checks
+
+Consider introducing checks for `msg.sender` to ensure the recipient of the money is as intended.
+
+<details><summary>6 Found Instances</summary>
+
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseMock.sol [Line: 55](../plume/src/lib/vendor/solidstate-solidity/contracts/token/ERC721/base/ERC721BaseMock.sol#L55)
+
+	```solidity
+	    function checkOnERC721Received(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol [Line: 19](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol#L19)
+
+	```solidity
+	    function sendValue(address payable account, uint256 amount) external {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol [Line: 23](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol#L23)
+
+	```solidity
+	    function functionCall(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol [Line: 30](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol#L30)
+
+	```solidity
+	    function functionCall(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol [Line: 38](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol#L38)
+
+	```solidity
+	    function functionCallWithValue(
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol [Line: 46](../plume/src/lib/vendor/solidstate-solidity/contracts/utils/AddressUtilsMock.sol#L46)
+
+	```solidity
+	    function functionCallWithValue(
+	```
+
+</details>
+
+
+
+## H-6: Weak Randomness
+
+The use of keccak256 hash functions on predictable values like block.timestamp, block.number, or similar data, including modulo operations on these values, should be avoided for generating randomness, as they are easily predictable and manipulable. The `PREVRANDAO` opcode also should not be used as a source of randomness. Instead, utilize Chainlink VRF for cryptographically secure and provably random values to ensure protocol integrity.
+
+<details><summary>2 Found Instances</summary>
+
+
+- Found in src/spin/Raffle.sol [Line: 229](../plume/src/spin/Raffle.sol#L229)
+
+	```solidity
+	            uint256(keccak256(abi.encodePacked(prizeId, block.timestamp))),
+	```
+
+- Found in src/spin/Spin.sol [Line: 188](../plume/src/spin/Spin.sol#L188)
+
+	```solidity
+	        uint256 clientSeed = uint256(keccak256(abi.encodePacked(admin, block.timestamp)));
+	```
+
+</details>
+
+
+
+## H-7: Contract locks Ether without a withdraw function
+
+It appears that the contract includes a payable function to accept Ether but lacks a corresponding function to withdraw it, which leads to the Ether being locked in the contract. To resolve this issue, please implement a public or external function that allows for the withdrawal of Ether from the contract.
+
+<details><summary>19 Found Instances</summary>
+
+
+- Found in src/Plume.sol [Line: 20](../plume/src/Plume.sol#L20)
+
+	```solidity
+	contract Plume is
+	```
+
+- Found in src/PlumeStaking.sol [Line: 44](../plume/src/PlumeStaking.sol#L44)
+
+	```solidity
+	contract PlumeStaking is SolidStateDiamond {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/ProxyMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/ProxyMock.sol#L7)
+
+	```solidity
+	contract ProxyMock is Proxy {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamondMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/SolidStateDiamondMock.sol#L7)
+
+	```solidity
+	contract SolidStateDiamondMock is SolidStateDiamond {}
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/base/DiamondBaseMock.sol [Line: 8](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/base/DiamondBaseMock.sol#L8)
+
+	```solidity
+	contract DiamondBaseMock is DiamondBase, DiamondWritableInternal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/fallback/DiamondFallbackMock.sol [Line: 8](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/fallback/DiamondFallbackMock.sol#L8)
+
+	```solidity
+	contract DiamondFallbackMock is DiamondFallback, DiamondWritableInternal {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/readable/DiamondReadableMock.sol [Line: 12](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/readable/DiamondReadableMock.sol#L12)
+
+	```solidity
+	contract DiamondReadableMock is
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableMock.sol [Line: 11](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/diamond/writable/DiamondWritableMock.sol#L11)
+
+	```solidity
+	contract DiamondWritableMock is DiamondBase, DiamondWritable, ERC165Base {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyMock.sol#L7)
+
+	```solidity
+	contract ManagedProxyMock is ManagedProxy {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyOwnableMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/managed/ManagedProxyOwnableMock.sol#L7)
+
+	```solidity
+	contract ManagedProxyOwnableMock is ManagedProxyOwnable {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyMock.sol#L7)
+
+	```solidity
+	contract UpgradeableProxyMock is UpgradeableProxy {
+	```
+
+- Found in src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyOwnableMock.sol [Line: 7](../plume/src/lib/vendor/solidstate-solidity/contracts/proxy/upgradeable/UpgradeableProxyOwnableMock.sol#L7)
+
+	```solidity
+	contract UpgradeableProxyOwnableMock is UpgradeableProxyOwnable {
+	```
+
+- Found in src/proxy/MockPUSDProxy.sol [Line: 10](../plume/src/proxy/MockPUSDProxy.sol#L10)
+
+	```solidity
+	contract MockPUSDProxy is ERC1967Proxy {
+	```
+
+- Found in src/proxy/PlumeProxy.sol [Line: 11](../plume/src/proxy/PlumeProxy.sol#L11)
+
+	```solidity
+	contract PlumeProxy is ERC1967Proxy {
+	```
+
+- Found in src/proxy/PlumeStakingProxy.sol [Line: 11](../plume/src/proxy/PlumeStakingProxy.sol#L11)
+
+	```solidity
+	contract PlumeStakingProxy is ERC1967Proxy {
+	```
+
+- Found in src/proxy/PlumeStakingRewardTreasuryProxy.sol [Line: 11](../plume/src/proxy/PlumeStakingRewardTreasuryProxy.sol#L11)
+
+	```solidity
+	contract PlumeStakingRewardTreasuryProxy is ERC1967Proxy {
+	```
+
+- Found in src/proxy/RaffleProxy.sol [Line: 7](../plume/src/proxy/RaffleProxy.sol#L7)
+
+	```solidity
+	contract RaffleProxy is ERC1967Proxy {
+	```
+
+- Found in src/proxy/SPINProxy.sol [Line: 11](../plume/src/proxy/SPINProxy.sol#L11)
+
+	```solidity
+	contract SpinProxy is ERC1967Proxy {
+	```
+
+- Found in src/spin/Raffle.sol [Line: 17](../plume/src/spin/Raffle.sol#L17)
+
+	```solidity
+	contract Raffle is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
+	```
+
+</details>
+
+
+
+## H-8: Reentrancy: State change after external call
+
+Changing state after an external call can lead to re-entrancy attacks.Use the checks-effects-interactions pattern to avoid this issue.
+
+<details><summary>4 Found Instances</summary>
+
+
+- Found in src/spin/Raffle.sol [Line: 193](../plume/src/spin/Raffle.sol#L193)
+
+	State is changed at: `prizeRanges[prizeId].push(
+            Range({ user: msg.sender, cumulativeEnd: newTotal })
+        )`, `totalTickets[prizeId] = newTotal`, `userHasEnteredPrize[prizeId][msg.sender] = true`, `totalUniqueUsers[prizeId]++`
+	```solidity
+	        (,,,, uint256 userRaffleTickets,,) = spinContract.getUserData(msg.sender);
+	```
+
+- Found in src/spin/Raffle.sol [Line: 195](../plume/src/spin/Raffle.sol#L195)
+
+	State is changed at: `prizeRanges[prizeId].push(
+            Range({ user: msg.sender, cumulativeEnd: newTotal })
+        )`, `totalTickets[prizeId] = newTotal`, `userHasEnteredPrize[prizeId][msg.sender] = true`, `totalUniqueUsers[prizeId]++`
+	```solidity
+	        spinContract.spendRaffleTickets(msg.sender, ticketAmount);
+	```
+
+- Found in src/spin/Raffle.sol [Line: 225](../plume/src/spin/Raffle.sol#L225)
+
+	State is changed at: `pendingVRFRequests[requestId] = prizeId`
+	```solidity
+	        uint256 requestId = supraRouter.generateRequest(
+	```
+
+- Found in src/spin/Spin.sol [Line: 190](../plume/src/spin/Spin.sol#L190)
+
+	State is changed at: `userNonce[nonce] = payable(msg.sender)`, `pendingNonce[msg.sender] = nonce`
+	```solidity
+	        uint256 nonce = supraRouter.generateRequest(callbackSignature, rngCount, numConfirmations, clientSeed, admin);
+	```
+
+</details>
