@@ -87,7 +87,7 @@ This disclosure is for educational purposes, highlighting novel findings not cov
 - ✅ **Measurable**: Gas costs, profit calculations, and impact quantification
 
 ## Repository Structure
-The discoveries are under /home/teycir/Repos/plumecontracts202508/Reports 
+The discoveries are under [/home/teycir/Repos/plumecontracts202508/Reports ](https://github.com/Teycir/plumecontracts202508/tree/main/Reports)
 ```
 Reports/
 ├── PoCs/                          # Executable Foundry test files
@@ -151,7 +151,6 @@ Reports/
 - **Comprehensive Coverage**: End-to-end analysis from deployment to runtime security
 - **Practical Solutions**: Actionable remediation recommendations with code examples
 
-This audit work demonstrates advanced capabilities in smart contract security research, with particular expertise in DeFi/GameFi protocols, oracle security, and upgradeable contract patterns.
 
 ## Contact for Audit Services
 
