@@ -1,6 +1,18 @@
-# Security Audit Contributions
+# Plume Network Security Audit Contributions
 
-This repository contains comprehensive security research conducted on Plume Network's smart contract ecosystem. Through systematic analysis and proof-of-concept development, I identified and responsibly disclosed **5 high-impact vulnerabilities** to Immunefi before the contracts went live.
+This repository showcases my independent security research on Plume Network's smart contract ecosystem. Through manual analysis, static scanning, and custom proof-of-concept (PoC) development, I identified and responsibly disclosed **5 high-impact vulnerabilities** to Immunefi during their pre-deployment Attackathon contest. All findings were submitted before the contracts went live, preventing potential exploits in a live environment.
+
+## Disclosure Statement
+
+These vulnerabilities were reported to Immunefi as part of the Plume Network Attackathon scope, focusing on critical issues like protocol insolvency and treasury drains. Despite detailed PoCs demonstrating concrete financial impact and alignment with CVSS standards, the reports were dismissed with feedback citing ["automated scanner output without demonstrating valid issues"](https://ibb.co/twFZmXb) and "lacking required vulnerability impact information." All reports were [closed without review](https://ibb.co/tpJFv5v). 
+
+This public disclosure addresses those concerns by providing:
+- **Manual vulnerability analysis** beyond automated tools
+- **Quantified financial impact** with specific ETH amounts at risk
+- **Executable proof-of-concepts** demonstrating real exploitability
+- **Detailed remediation guidance** with code examples
+
+This disclosure is for educational purposes, highlighting novel findings not covered in prior audits. No live exploits are enabled; Plume remains in testnet phase, allowing time for verification and fixes.
 
 ## Executive Summary
 
@@ -75,7 +87,7 @@ This repository contains comprehensive security research conducted on Plume Netw
 - ✅ **Measurable**: Gas costs, profit calculations, and impact quantification
 
 ## Repository Structure
-
+The discoveries are under /home/teycir/Repos/plumecontracts202508/Reports 
 ```
 Reports/
 ├── PoCs/                          # Executable Foundry test files
@@ -98,8 +110,8 @@ Reports/
 1. **Discovery Phase**: Systematic contract analysis and vulnerability identification
 2. **PoC Development**: Comprehensive proof-of-concept creation with impact quantification
 3. **Report Preparation**: Detailed technical reports with remediation recommendations
-4. **Immunefi Submission**: Responsible disclosure through established bug bounty platform
-5. **Pre-deployment Fix**: Vulnerabilities addressed before contracts went live
+4. **Immunefi Submission**: Responsible disclosure through established bug bounty platform pre-deployment
+5. **Public Sharing**: Post-dismissal disclosure for community education, pre-mainnet
 
 ### Business Impact Prevented
 - **Financial**: Prevented potential loss of 200,000+ ETH in treasury funds
@@ -132,16 +144,19 @@ Reports/
 - **Documentation**: Clear technical writing and vulnerability reporting
 
 ### Research Impact
+- **Manual Analysis**: Hand-crafted vulnerability research beyond automated scanner capabilities
+- **Quantified Impact**: Specific financial risk assessment (200,000+ ETH at risk)
 - **Novel Findings**: Discovered vulnerabilities not covered in prior audits (OtterSec, Trail of Bits)
+- **Executable PoCs**: Working demonstrations proving real-world exploitability
 - **Comprehensive Coverage**: End-to-end analysis from deployment to runtime security
 - **Practical Solutions**: Actionable remediation recommendations with code examples
-- **Industry Standards**: Reports following Immunefi and CVSS classification standards
 
 This audit work demonstrates advanced capabilities in smart contract security research, with particular expertise in DeFi/GameFi protocols, oracle security, and upgradeable contract patterns.
 
 ## Contact for Audit Services
 
 For professional smart contract security audits and vulnerability assessments, contact: **teycir@pxdmail.net** 
+
 
 
 # contracts
